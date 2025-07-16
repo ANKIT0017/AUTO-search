@@ -22,7 +22,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run job scraper
-        run: python JobScraperUltimate.py
+        run: python JobScraperUltimate.py --csv jobs_main.csv
 
       - name: Commit and push results
         env:
