@@ -253,9 +253,10 @@ try:
                 hours_old=hours,  
                 country_indeed=country_to_search,
             )
+            print(f"[DEBUG] Scraped {len(current_jobs)} jobs from jobspy.")
             if include_skillsire:
                 current_jobs = skillSire_scraper(current_jobs)
-                
+                print(f"[DEBUG] After adding SkillSire jobs, total jobs: {len(current_jobs)}.")
         except Exception as e:
             print(f"Error during scraping: {e}")
             time.sleep(sleep_time)
@@ -279,6 +280,8 @@ try:
             new_jobs = matching_jobs
 
         job_count = len(new_jobs)
+        print(f"[DEBUG] New jobs to write: {job_count}")
+        print(f"[DEBUG] CSV file path: {file_name_csv}")
         
         if job_count > 0:
             print(f"Found {job_count} new jobs")
@@ -305,8 +308,9 @@ try:
                     escapechar="\\", 
                     index=False
                 )
+            print(f"[DEBUG] Wrote {job_count} new jobs to CSV.")
         else:
-            print("No new jobs found")
+            print("[DEBUG] No new jobs found. Nothing written to CSV.")
 
         if email_send:
             time.sleep(10) #This is set because the CSV Takes time to save
