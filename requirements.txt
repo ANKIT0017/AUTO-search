@@ -1,0 +1,5 @@
+Flask
+pandas
+psutil
+requests
+python-jobspy 
