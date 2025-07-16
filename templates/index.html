@@ -321,6 +321,7 @@
     }
     $(document).ready(function() {
         fetchJobs();
+        startJobsPolling(); // Start polling when the page loads
         $('#searchInput').on('input', function() {
             const value = $(this).val().toLowerCase();
             if ($('#all-jobs-tab').hasClass('active')) {
@@ -417,7 +418,17 @@
             // For now, just remove from UI
             btn.closest('tr').fadeOut(300, function() { $(this).remove(); });
         });
-});
+    });
+
+    let jobsPollInterval = null;
+    function startJobsPolling() {
+        if (jobsPollInterval) clearInterval(jobsPollInterval);
+        jobsPollInterval = setInterval(fetchJobs, 120000); // every 2 minutes
+    }
+    function stopJobsPolling() {
+        if (jobsPollInterval) clearInterval(jobsPollInterval);
+        jobsPollInterval = null;
+    }
 </script>
     <!-- Scraper Settings Modal -->
     <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
