@@ -227,100 +227,68 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--csv', type=str, default=None)
 args, unknown = parser.parse_known_args()
 
+# Remove the while True loop and just run the scraping logic once
 try:
-    while True:
-        # Check for stop signal
-        if os.path.exists('STOP_SCRAPE'):
-            print("Scraping stopped by user.")
-            os.remove('STOP_SCRAPE')
-            break
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        if args.csv:
-            file_name_csv = os.path.join(base_dir, args.csv)
-        else:
-            file_name_csv = os.path.join(base_dir, getFileName(file_name_prefix))
-        timeObj = time.localtime(time.time())
-        
-        print(f"Starting scrape at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        
-        try:
-            # Scrape jobs from different platforms
-            current_jobs = scrape_jobs(
-                site_name=scrape_from, 
-                search_term=search_term, 
-                location="India",
-                results_wanted=results_fetch_count,
-                hours_old=hours,  
-                country_indeed=country_to_search,
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    if hasattr(args, 'csv') and args.csv:
+        file_name_csv = os.path.join(base_dir, args.csv)
+    else:
+        file_name_csv = os.path.join(base_dir, getFileName(file_name_prefix))
+    timeObj = time.localtime(time.time())
+    print(f"Starting scrape at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    # Scrape jobs from different platforms
+    current_jobs = scrape_jobs(
+        site_name=scrape_from, 
+        search_term=search_term, 
+        location="India",
+        results_wanted=results_fetch_count,
+        hours_old=hours,  
+        country_indeed=country_to_search,
+    )
+    if include_skillsire:
+        current_jobs = skillSire_scraper(current_jobs)
+    current_jobs['title_lower'] = current_jobs['title'].str.lower()
+    # Filter jobs based on matching roles
+    matching_jobs = current_jobs[current_jobs['title_lower'].apply(
+        lambda title: any(role in title for role in roles_of_interest_lower)
+    )]
+    matching_jobs = matching_jobs[selected_fields]
+    # Load existing jobs from the CSV file (if it exists)
+    existing_job_urls = load_existing_jobs(file_name_csv)
+    # Perform set subtraction to find new jobs (using job_url)
+    if existing_job_urls:
+        new_jobs = matching_jobs[~matching_jobs['job_url'].isin(existing_job_urls)]
+    else:
+        new_jobs = matching_jobs
+    job_count = len(new_jobs)
+    if job_count > 0:
+        # Add scrape_date and scrape_time columns to new_jobs
+        scrape_date = time.strftime("%Y-%m-%d", timeObj)
+        scrape_time = time.strftime("%H:%M:%S", timeObj)
+        new_jobs = new_jobs.copy()
+        new_jobs.loc[:, 'scrape_date'] = scrape_date
+        new_jobs.loc[:, 'scrape_time'] = scrape_time
+        # Save new jobs to a temp file for the web app
+        new_jobs.reset_index(drop=True, inplace=True)
+        with open(os.path.join(base_dir, 'new_jobs_temp.json'), 'w', encoding='utf-8') as f:
+            f.write(new_jobs.to_json(orient='records', force_ascii=False))
+        # Write a comment line as a separator
+        with open(file_name_csv, 'a', encoding='utf-8') as f:
+            f.write(f'# Jobs Scraped at : , #, {scrape_date}, {scrape_time}\n')
+        # Only append new jobs (no dummy row)
+        file_exists = os.path.exists(file_name_csv)
+        with open(file_name_csv, 'a', newline='', encoding='utf-8') as csv_file:
+            new_jobs.to_csv(
+                csv_file, 
+                header=not file_exists,  # Add header only if file doesn't exist
+                quoting=csv.QUOTE_NONNUMERIC, 
+                escapechar="\\", 
+                index=False
             )
-            print(f"[DEBUG] Scraped {len(current_jobs)} jobs from jobspy.")
-            if include_skillsire:
-                current_jobs = skillSire_scraper(current_jobs)
-                print(f"[DEBUG] After adding SkillSire jobs, total jobs: {len(current_jobs)}.")
-        except Exception as e:
-            print(f"Error during scraping: {e}")
-            time.sleep(sleep_time)
-            continue
-
-        current_jobs['title_lower'] = current_jobs['title'].str.lower()
-
-        # Filter jobs based on matching roles
-        matching_jobs = current_jobs[current_jobs['title_lower'].apply(
-            lambda title: any(role in title for role in roles_of_interest_lower)
-        )]
-        matching_jobs = matching_jobs[selected_fields]
-
-        # Load existing jobs from the CSV file (if it exists)
-        existing_job_urls = load_existing_jobs(file_name_csv)
-
-        # Perform set subtraction to find new jobs (using job_url)
-        if existing_job_urls:
-            new_jobs = matching_jobs[~matching_jobs['job_url'].isin(existing_job_urls)]
-        else:
-            new_jobs = matching_jobs
-
-        job_count = len(new_jobs)
-        print(f"[DEBUG] New jobs to write: {job_count}")
-        print(f"[DEBUG] CSV file path: {file_name_csv}")
-        
-        if job_count > 0:
-            print(f"Found {job_count} new jobs")
-            # Add scrape_date and scrape_time columns to new_jobs
-            scrape_date = time.strftime("%Y-%m-%d", timeObj)
-            scrape_time = time.strftime("%H:%M:%S", timeObj)
-            new_jobs = new_jobs.copy()
-            new_jobs.loc[:, 'scrape_date'] = scrape_date
-            new_jobs.loc[:, 'scrape_time'] = scrape_time
-            # Save new jobs to a temp file for the web app
-            new_jobs.reset_index(drop=True, inplace=True)
-            with open(os.path.join(base_dir, 'new_jobs_temp.json'), 'w', encoding='utf-8') as f:
-                f.write(new_jobs.to_json(orient='records', force_ascii=False))
-            # Write a comment line as a separator
-            with open(file_name_csv, 'a', encoding='utf-8') as f:
-                f.write(f'# Jobs Scraped at : , #, {scrape_date}, {scrape_time}\n')
-            # Only append new jobs (no dummy row)
-            file_exists = os.path.exists(file_name_csv)
-            with open(file_name_csv, 'a', newline='', encoding='utf-8') as csv_file:
-                new_jobs.to_csv(
-                    csv_file, 
-                    header=not file_exists,  # Add header only if file doesn't exist
-                    quoting=csv.QUOTE_NONNUMERIC, 
-                    escapechar="\\", 
-                    index=False
-                )
-            print(f"[DEBUG] Wrote {job_count} new jobs to CSV.")
-        else:
-            print("[DEBUG] No new jobs found. Nothing written to CSV.")
-
         if email_send:
             time.sleep(10) #This is set because the CSV Takes time to save
             send_email(file_name_csv,to_email)
-
-        hours = 1  # After the first run, check only for fresh jobs (1 hour old)
-        # Wait before scraping again
-        print(f"Sleeping for {sleep_time} seconds...")
-        time.sleep(sleep_time)
-
+    print("Scraping run complete.")
 except KeyboardInterrupt:
     print("Scraping stopped by user.")
 
