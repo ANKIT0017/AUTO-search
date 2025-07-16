@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Scraper Ultimate</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f0f2f5;
+            font-family: 'Inter', 'Roboto', Arial, sans-serif;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        .header {
+            background: #fff;
+            padding: 1.2rem 2rem 0.7rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.07);
+            margin-bottom: 0.5rem;
+            border-radius: 0 0 1rem 1rem;
+        }
+        .header-title {
+            font-size: 1.7rem;
+            font-weight: 300;
+            letter-spacing: -1px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            border-bottom: 3px solid #0d6efd;
+            display: inline-block;
+            padding-bottom: 0.2rem;
+        }
+        .btn-group-action {
+            gap: 0.5rem;
+        }
+        .search-label {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+        .search-bar input {
+            height: 2.75rem;
+            font-size: 1.1rem;
+            padding-left: 2.5rem;
+        }
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #adb5bd;
+            font-size: 1.3rem;
+        }
+        .nav-tabs {
+            border-bottom: 2px solid #e3e6ea;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        .nav-tabs .nav-link {
+            font-weight: 500;
+            color: #495057;
+            border: none;
+            border-bottom: 3px solid transparent;
+            margin-right: 0.5rem;
+            transition: border-color 0.2s, color 0.2s;
+        }
+        .nav-tabs .nav-link.active {
+            color: #0d6efd;
+            border-bottom: 3px solid #0d6efd;
+            font-weight: 600;
+            background: #f8f9fa;
+        }
+        .table-responsive {
+            margin-top: 1rem;
+        }
+        table th, table td {
+            vertical-align: middle !important;
+        }
+        table th {
+            background: #f8f9fa;
+            color: #212529;
+            font-weight: 600;
+        }
+        table td {
+            background: #fff;
+        }
+        .table-hover tbody tr:hover {
+            background: rgba(13,110,253,0.04);
+        }
+        .table-striped > tbody > tr:nth-of-type(odd) {
+            background-color: #f6f8fa;
+        }
+        .sticky-title {
+            position: sticky;
+            left: 0;
+            background: #fff;
+            z-index: 2;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .py-3 {
+            padding-top: 1rem !important;
+            padding-bottom: 1rem !important;
+        }
+        .empty-state {
+            text-align: center;
+            color: #adb5bd;
+            padding: 3rem 0;
+        }
+        .empty-state svg {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 1rem;
+        }
+        .spinner-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(255,255,255,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            display: none;
+        }
+        @media (max-width: 600px) {
+            .container {
+                padding: 1rem 0.25rem;
+            }
+            .header {
+                padding: 1rem 0.5rem 0.5rem 0.5rem;
+            }
+            .search-bar {
+                flex-direction: column;
+                align-items: stretch !important;
+            }
+            .btn-group-action {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="header d-flex align-items-center justify-content-between">
+        <span class="header-title"><i class="bi bi-briefcase-fill me-2 text-primary"></i>Job Scraper Ultimate</span>
+        <button id="settingsBtn" class="btn btn-outline-secondary" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Configure scraper"><i class="bi bi-gear-fill"></i></button>
+    </header>
+<div class="container">
+        <div class="mb-1">
+            <label for="searchInput" class="search-label">Search Jobs</label>
+            <div class="d-flex align-items-center search-bar position-relative mb-2">
+                <i class="bi bi-search search-icon"></i>
+                <input type="text" id="searchInput" class="form-control form-control-lg" placeholder="Type to search...">
+                <div class="btn-group btn-group-action ms-3">
+                    <button id="scrapeBtn" class="btn btn-primary"><i class="bi bi-arrow-repeat"></i> Scrape Now</button>
+                    <button id="stopScrapeBtn" class="btn btn-outline-danger"><i class="bi bi-stop-circle"></i> Stop All</button>
+                </div>
+            </div>
+    </div>
+        <div id="alertBox" class="alert mt-3 d-none" role="alert"></div>
+        <ul class="nav nav-tabs" id="jobTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="all-jobs-tab" data-bs-toggle="tab" data-bs-target="#all-jobs" type="button" role="tab">
+                    <i class="bi bi-list-ul"></i> All Jobs <i class="bi bi-arrow-down-short"></i>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="threads-tab" data-bs-toggle="tab" data-bs-target="#threads" type="button" role="tab">
+                    <i class="bi bi-cpu"></i> Scraping Threads
+                </button>
+            </li>
+        </ul>
+        <div class="tab-content" id="jobTabsContent">
+            <div class="tab-pane fade show active" id="all-jobs" role="tabpanel">
+                <div class="table-responsive shadow-sm rounded bg-white p-3">
+                    <table class="table table-hover align-middle mb-0 table-striped" id="jobsTableAll">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="sticky-title">Title</th>
+                    <th>Company</th>
+                    <th>Location</th>
+                                <th class="text-right">Date</th>
+                                <th class="text-right">Time</th>
+                    <th>Link</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="threads" role="tabpanel">
+                <div class="mb-3" id="threadInfo">
+                    <!-- Scraping thread info will be inserted here -->
+                </div>
+                <div class="table-responsive shadow-sm rounded bg-white p-3">
+                    <table class="table table-hover align-middle mb-0 table-striped" id="threadsTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Search Term</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+        </table>
+    </div>
+</div>
+        </div>
+        <div class="spinner-overlay" id="spinnerOverlay">
+            <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+        </div>
+    </div>
+    <!-- Settings Modal and Toasts remain unchanged -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    let allJobs = [];
+    let newJobs = [];
+    function renderJobs(jobs, tableId) {
+        const tbody = $(tableId + ' tbody');
+        tbody.empty();
+        if (jobs.length === 0) {
+            tbody.append(`<tr><td colspan="7" class="empty-state">
+                <svg fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="#adb5bd" stroke-width="2"/><path d="M8 12h8M8 16h8M8 8h8" stroke="#adb5bd" stroke-width="2" stroke-linecap="round"/></svg>
+                <div>No jobs yet—click <b>Scrape Now</b>!</div>
+            </td></tr>`);
+        }
+        jobs.forEach(job => {
+            const title = (typeof job.title === 'string') ? job.title : '';
+            const company = (typeof job.company === 'string') ? job.company : '';
+            const location = (typeof job.location === 'string') ? job.location : '';
+            const scrape_date = (typeof job.scrape_date === 'string') ? job.scrape_date : '';
+            const scrape_time = (typeof job.scrape_time === 'string') ? job.scrape_time : '';
+            const job_url = (typeof job.job_url === 'string') ? job.job_url : '#';
+            const row = `<tr class="py-3">
+                <td class="sticky-title">${title}</td>
+                <td>${company}</td>
+                <td>${location}</td>
+                <td class="text-right">${scrape_date}</td>
+                <td class="text-right">${scrape_time}</td>
+                <td><a href="${job_url}" target="_blank" class="text-primary"><i class="bi bi-box-arrow-up-right"></i></a></td>
+                <td><button class="btn btn-outline-danger btn-sm delete-job-btn" data-job-url="${encodeURIComponent(job_url)}"><i class="bi bi-trash"></i> Delete</button></td>
+            </tr>`;
+            tbody.append(row);
+        });
+    }
+    function fetchJobs() {
+        $.getJSON('/api/jobs')
+            .done(function(data) {
+                allJobs = data.jobs || [];
+                allJobs.sort((a, b) => {
+                    const dateA = (a.scrape_date || '').replace(/\D/g, '');
+                    const dateB = (b.scrape_date || '').replace(/\D/g, '');
+                    const timeA = (a.scrape_time || '');
+                    const timeB = (b.scrape_time || '');
+                    if (dateA !== dateB) return dateB.localeCompare(dateA);
+                    return timeB.localeCompare(timeA);
+                });
+                renderJobs(allJobs, '#jobsTableAll');
+            })
+            .fail(function(jqXHR, textStatus, errorThrown) {
+                renderJobs([], '#jobsTableAll');
+            });
+    }
+    function scrapeJobs() {
+        $('#scrapeBtn').prop('disabled', true);
+        $('#searchInput').prop('disabled', true);
+        $('#spinnerOverlay').show();
+        $('#alertBox').addClass('d-none');
+        $.post('/api/scrape', function(response) {
+            if (response.success) {
+                $('#alertBox').removeClass('alert-danger').addClass('alert-success').removeClass('d-none').html('<i class="bi bi-check-circle me-2"></i>' + response.message);
+                if (response.new_jobs && response.new_jobs.length > 0) {
+                    newJobs = response.new_jobs;
+                    renderJobs(newJobs, '#jobsTableNew');
+                    var tab = new bootstrap.Tab(document.querySelector('#new-jobs-tab'));
+                    tab.show();
+                } else {
+                    newJobs = [];
+                    renderJobs([], '#jobsTableNew');
+                fetchJobs();
+                }
+            } else {
+                $('#alertBox').removeClass('alert-success').addClass('alert-danger').removeClass('d-none').html('<i class="bi bi-exclamation-triangle me-2"></i>' + response.message);
+            }
+        }).always(function() {
+            $('#scrapeBtn').prop('disabled', false);
+            $('#searchInput').prop('disabled', false);
+            $('#spinnerOverlay').hide();
+        });
+    }
+    function renderThreads(threads) {
+        const tbody = $('#threadsTable tbody');
+        tbody.empty();
+        if (threads.length === 0) {
+            tbody.append('<tr><td colspan="2" class="empty-state">No scraping threads running.</td></tr>');
+        } else {
+            threads.forEach(t => {
+                const row = `<tr>
+                    <td>${t.search_term || ''}</td>
+                    <td class="text-end">
+                        <button class="btn btn-outline-danger btn-sm stop-thread-btn" data-pid="${t.pid}"><i class="bi bi-stop-circle"></i> Stop</button>
+                    </td>
+                </tr>`;
+                tbody.append(row);
+            });
+        }
+    }
+    // Robust tab event handler for Scraping Threads
+    function fetchThreads() {
+        $.getJSON('/api/threads', function(data) {
+            const threads = data.threads || [];
+            renderThreads(threads);
+        }).fail(function() {
+            // Optionally show an error in the table or elsewhere
+        });
+    }
+    $(document).ready(function() {
+        fetchJobs();
+        $('#searchInput').on('input', function() {
+            const value = $(this).val().toLowerCase();
+            if ($('#all-jobs-tab').hasClass('active')) {
+                renderJobs(allJobs.filter(job =>
+                    (job.title || '').toLowerCase().includes(value) ||
+                    (job.company || '').toLowerCase().includes(value) ||
+                    (job.location || '').toLowerCase().includes(value)
+                ), '#jobsTableAll');
+            } else {
+                renderJobs(newJobs.filter(job =>
+                    (job.title || '').toLowerCase().includes(value) ||
+                    (job.company || '').toLowerCase().includes(value) ||
+                    (job.location || '').toLowerCase().includes(value)
+                ), '#jobsTableNew');
+            }
+        });
+        $('#scrapeBtn').click(scrapeJobs);
+        $('#stopScrapeBtn').click(function() {
+            $.post('/api/stop_scrape', function(response) {
+                $('#alertBox').removeClass('alert-success').addClass('alert-warning').removeClass('d-none').html('<i class="bi bi-exclamation-octagon me-2"></i>' + response.message);
+            });
+        });
+        $(document).on('click', '.stop-thread-btn', function() {
+            const pid = $(this).data('pid');
+            const btn = $(this);
+            btn.prop('disabled', true);
+            $.post(`/api/stop_scraper/${pid}`, function(response) {
+                if (response.success) {
+                    btn.closest('tr').fadeOut(400, fetchThreads);
+                } else {
+                    alert(response.message);
+                    btn.prop('disabled', false);
+                }
+            }).fail(function() {
+                alert('Failed to stop process.');
+                btn.prop('disabled', false);
+            });
+        });
+        // Always call fetchThreads when Scraping Threads tab is shown
+        $('button#threads-tab').on('shown.bs.tab', function (e) {
+            fetchThreads();
+            if (window.threadPoll) clearInterval(window.threadPoll);
+            window.threadPoll = setInterval(fetchThreads, 5000);
+        });
+        $('button#all-jobs-tab').on('shown.bs.tab', function (e) {
+            if (window.threadPoll) clearInterval(window.threadPoll);
+        });
+        $('#settingsBtn').click(function() {
+            $.get('/api/settings', function(settings) {
+                $('#hours').val(settings.hours);
+                $('#sleep_time').val(settings.sleep_time);
+                $('#scrape_from').val(settings.scrape_from.join(','));
+                $('#search_term').val(settings.search_term);
+                $('#results_fetch_count').val(settings.results_fetch_count);
+                $('#country_to_search').val(settings.country_to_search);
+                $('#file_name_prefix').val(settings.file_name_prefix);
+                $('#roles_of_interest').val(settings.roles_of_interest.join(','));
+                var modal = new bootstrap.Modal(document.getElementById('settingsModal'));
+                modal.show();
+            });
+        });
+        $('#saveSettingsBtn').click(function() {
+            const settings = {
+                hours: parseInt($('#hours').val()),
+                sleep_time: parseInt($('#sleep_time').val()),
+                scrape_from: $('#scrape_from').val().split(',').map(s => s.trim()),
+                search_term: $('#search_term').val(),
+                results_fetch_count: parseInt($('#results_fetch_count').val()),
+                country_to_search: $('#country_to_search').val(),
+                file_name_prefix: $('#file_name_prefix').val(),
+                roles_of_interest: $('#roles_of_interest').val().split(',').map(s => s.trim())
+            };
+            $.ajax({
+                url: '/api/settings',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(settings),
+                success: function() {
+                    $('#alertBox').removeClass('alert-danger').addClass('alert-success').removeClass('d-none').html('<i class="bi bi-check-circle me-2"></i>Settings saved!');
+                    var modal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
+                    modal.hide();
+                },
+                error: function() {
+                    $('#alertBox').removeClass('alert-success').addClass('alert-danger').removeClass('d-none').html('<i class="bi bi-exclamation-triangle me-2"></i>Failed to save settings.');
+                }
+            });
+        });
+        $(function(){ $('[data-bs-toggle="tooltip"]').tooltip(); });
+        // Delete job button handler (placeholder, backend to be implemented)
+        $(document).on('click', '.delete-job-btn', function() {
+            const btn = $(this);
+            const jobUrl = decodeURIComponent(btn.data('job-url'));
+            // TODO: Send request to backend to delete job from CSV
+            // For now, just remove from UI
+            btn.closest('tr').fadeOut(300, function() { $(this).remove(); });
+        });
+});
+</script>
+    <!-- Scraper Settings Modal -->
+    <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="settingsModalLabel"><i class="bi bi-gear-fill me-2"></i>Scraper Settings</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="settingsForm">
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label for="hours" class="form-label">Hours Old</label>
+                  <input type="number" class="form-control" id="hours" min="1" required>
+                </div>
+                <div class="col-md-3">
+                  <label for="sleep_time" class="form-label">Sleep Time (s)</label>
+                  <input type="number" class="form-control" id="sleep_time" min="1" required>
+                </div>
+                <div class="col-md-6">
+                  <label for="scrape_from" class="form-label">Scrape From (comma-separated)</label>
+                  <input type="text" class="form-control" id="scrape_from" placeholder="linkedin,indeed,skillsire">
+                </div>
+                <div class="col-md-6">
+                  <label for="search_term" class="form-label">Search Term</label>
+                  <input type="text" class="form-control" id="search_term" required>
+                </div>
+                <div class="col-md-3">
+                  <label for="results_fetch_count" class="form-label">Results Count</label>
+                  <input type="number" class="form-control" id="results_fetch_count" min="1" required>
+                </div>
+                <div class="col-md-3">
+                  <label for="country_to_search" class="form-label">Country</label>
+                  <input type="text" class="form-control" id="country_to_search" required>
+                </div>
+                <div class="col-md-6">
+                  <label for="file_name_prefix" class="form-label">File Name Prefix</label>
+                  <input type="text" class="form-control" id="file_name_prefix">
+                </div>
+                <div class="col-12">
+                  <label for="roles_of_interest" class="form-label">Roles of Interest (comma-separated)</label>
+                  <textarea class="form-control" id="roles_of_interest" rows="2"></textarea>
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="saveSettingsBtn"><i class="bi bi-save"></i> Save Settings</button>
+          </div>
+        </div>
+      </div>
+    </div>
+</body>
+</html> 

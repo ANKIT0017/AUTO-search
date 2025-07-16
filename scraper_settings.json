@@ -1,0 +1,23 @@
+{
+  "hours": 1,
+  "sleep_time": 10,
+  "scrape_from": [
+    "linkedin",
+    "indeed"
+  ],
+  "search_term": "software engineer",
+  "results_fetch_count": 300,
+  "country_to_search": "India",
+  "file_name_prefix": "",
+  "roles_of_interest": [
+    "Software Engineer",
+    "Backend Developer",
+    "Frontend Developer",
+    "DevOps Enginee",
+    "Full Stack Developer",
+    "Cloud Engineer",
+    "Site Reliability Engineer",
+    "Java Developer",
+    "Python Developer"
+  ]
+}
