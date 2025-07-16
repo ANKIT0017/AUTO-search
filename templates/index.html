@@ -220,6 +220,19 @@
 <script>
     let allJobs = [];
     let newJobs = [];
+    // Helper to convert UTC date/time to IST
+    function utcToIST(dateStr, timeStr) {
+        // Combine date and time as UTC
+        const utcDate = new Date(dateStr + 'T' + timeStr + 'Z');
+        // IST is UTC+5:30
+        const istOffset = 5.5 * 60; // in minutes
+        const istDate = new Date(utcDate.getTime() + istOffset * 60 * 1000);
+        // Format as needed
+        const date = istDate.toLocaleDateString('en-IN');
+        const time = istDate.toLocaleTimeString('en-IN', { hour12: false });
+        return { date, time };
+    }
+
     function renderJobs(jobs, tableId) {
         const tbody = $(tableId + ' tbody');
         tbody.empty();
@@ -236,12 +249,20 @@
             const scrape_date = (typeof job.scrape_date === 'string') ? job.scrape_date : '';
             const scrape_time = (typeof job.scrape_time === 'string') ? job.scrape_time : '';
             const job_url = (typeof job.job_url === 'string') ? job.job_url : '#';
+            // Convert UTC to IST for display
+            let dateDisplay = scrape_date;
+            let timeDisplay = scrape_time;
+            if (scrape_date && scrape_time) {
+                const ist = utcToIST(scrape_date, scrape_time);
+                dateDisplay = ist.date;
+                timeDisplay = ist.time;
+            }
             const row = `<tr class="py-3">
                 <td class="sticky-title">${title}</td>
                 <td>${company}</td>
                 <td>${location}</td>
-                <td class="text-right">${scrape_date}</td>
-                <td class="text-right">${scrape_time}</td>
+                <td class="text-right">${dateDisplay}</td>
+                <td class="text-right">${timeDisplay}</td>
                 <td><a href="${job_url}" target="_blank" class="text-primary"><i class="bi bi-box-arrow-up-right"></i></a></td>
                 <td><button class="btn btn-outline-danger btn-sm delete-job-btn" data-job-url="${encodeURIComponent(job_url)}"><i class="bi bi-trash"></i> Delete</button></td>
             </tr>`;
