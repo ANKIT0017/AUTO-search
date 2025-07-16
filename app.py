@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, send_file
 import pandas as pd
 import subprocess
 import os
@@ -140,6 +140,14 @@ def get_threads():
             print(f"Process error: {e}")
             continue
     return jsonify({'threads': threads})
+
+@app.route('/download_log')
+def download_log():
+    log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'scraper.log')
+    if os.path.exists(log_path):
+        return send_file(log_path, as_attachment=True)
+    else:
+        return "Log file not found.", 404
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True) 
