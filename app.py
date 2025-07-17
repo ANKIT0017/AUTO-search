@@ -60,12 +60,9 @@ def get_jobs():
     if list(df.columns) != expected_cols:
         print('CSV header mismatch! Columns found:', df.columns, flush=True)
         return jsonify({'jobs': []})
-    print('DF HEAD:', df.head(), flush=True)
-    print('DF COLUMNS:', df.columns.tolist(), flush=True)
     df = df[df['job_url'].astype(str).str.startswith('http')]
     jobs = df.to_dict(orient='records')
     jobs = clean_nan(jobs)  # Clean NaN values for valid JSON
-    print('JOBS TO RETURN:', jobs, flush=True)
     return jsonify({'jobs': jobs})
 
 @app.route('/api/scrape', methods=['POST'])
