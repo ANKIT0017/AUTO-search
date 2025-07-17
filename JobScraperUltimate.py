@@ -230,7 +230,7 @@ args, unknown = parser.parse_known_args()
 # Remove the while True loop and just run the scraping logic once
 try:
         base_dir = os.path.dirname(os.path.abspath(__file__))
-    if hasattr(args, 'csv') and args.csv:
+        if hasattr(args, 'csv') and args.csv:
             file_name_csv = os.path.join(base_dir, args.csv)
         else:
             file_name_csv = os.path.join(base_dir, getFileName(file_name_prefix))
