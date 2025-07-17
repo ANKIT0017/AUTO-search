@@ -21,6 +21,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Lint Python code
+        run: |
+          pip install black
+          black --check .
+
       - name: Run job scraper
         run: python JobScraperUltimate.py --csv jobs_main.csv
 
