@@ -25,6 +25,7 @@ jobs:
         run: |
           pip install black
           black --check .
+        continue-on-error: true
 
       - name: Auto-format with black and push
         run: |
