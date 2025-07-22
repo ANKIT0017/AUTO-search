@@ -6,6 +6,8 @@ import glob
 import math
 import json
 import psutil
+import base64
+import requests
 
 app = Flask(__name__)
 
@@ -43,6 +45,32 @@ DEFAULT_SETTINGS = {
         "Data Visualization",
     ]
 }
+
+def push_settings_to_github():
+    GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
+    REPO = 'ANKIT0017/AUTO-search'  # Updated to your actual repo
+    BRANCH = 'main'
+    FILE_PATH = 'scraper_settings.json'
+    with open(FILE_PATH, 'r', encoding='utf-8') as f:
+        content = f.read()
+    content_b64 = base64.b64encode(content.encode()).decode()
+    # Get the current file SHA
+    url = f'https://api.github.com/repos/{REPO}/contents/{FILE_PATH}'
+    headers = {'Authorization': f'token {GITHUB_TOKEN}'}
+    r = requests.get(url, headers=headers)
+    if r.status_code == 200:
+        sha = r.json()['sha']
+    else:
+        sha = None
+    data = {
+        'message': 'Update scraper_settings.json from app',
+        'content': content_b64,
+        'branch': BRANCH,
+    }
+    if sha:
+        data['sha'] = sha
+    r = requests.put(url, headers=headers, json=data)
+    return r.status_code in (200, 201)
 
 @app.route('/')
 def index():
@@ -99,6 +127,7 @@ def settings():
         settings = request.get_json()
         with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
             json.dump(settings, f, ensure_ascii=False, indent=2)
+        push_settings_to_github()  # Push the updated settings to GitHub
         return jsonify({'success': True})
     else:
         if os.path.exists(SETTINGS_FILE):
