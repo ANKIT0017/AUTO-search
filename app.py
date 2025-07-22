@@ -61,33 +61,36 @@ DEFAULT_SETTINGS = {
     ],
 }
 
+
 def push_settings_to_github():
-    GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
-    REPO = 'ANKIT0017/AUTO-search'  # Updated to your actual repo
-    BRANCH = 'main'
-    FILE_PATH = 'scraper_settings.json'
-    with open(FILE_PATH, 'r', encoding='utf-8') as f:
+    GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
+    REPO = "ANKIT0017/AUTO-search"  # Updated to your actual repo
+    BRANCH = "main"
+    FILE_PATH = "scraper_settings.json"
+    with open(FILE_PATH, "r", encoding="utf-8") as f:
         content = f.read()
     content_b64 = base64.b64encode(content.encode()).decode()
     # Get the current file SHA
-    url = f'https://api.github.com/repos/{REPO}/contents/{FILE_PATH}'
-    headers = {'Authorization': f'token {GITHUB_TOKEN}'}
+    url = f"https://api.github.com/repos/{REPO}/contents/{FILE_PATH}"
+    headers = {"Authorization": f"token {GITHUB_TOKEN}"}
     r = requests.get(url, headers=headers)
     if r.status_code == 200:
-        sha = r.json()['sha']
+        sha = r.json()["sha"]
     else:
         sha = None
     data = {
-        'message': 'Update scraper_settings.json from app',
-        'content': content_b64,
-        'branch': BRANCH,
+        "message": "Update scraper_settings.json from app",
+        "content": content_b64,
+        "branch": BRANCH,
     }
     if sha:
-        data['sha'] = sha
+        data["sha"] = sha
     r = requests.put(url, headers=headers, json=data)
     return r.status_code in (200, 201)
 
+
 BLOCKED_COMPANIES_FILE = "blocked_companies.json"
+
 
 def load_blocked_companies():
     if os.path.exists(BLOCKED_COMPANIES_FILE):
@@ -95,14 +98,15 @@ def load_blocked_companies():
             return set(json.load(f))
     return set()
 
+
 def save_blocked_companies(companies):
     with open(BLOCKED_COMPANIES_FILE, "w", encoding="utf-8") as f:
         json.dump(sorted(list(companies)), f, ensure_ascii=False, indent=2)
 
-@app.route('/')
-def index():
-    return render_template('index.html')
 
+@app.route("/")
+def index():
+    return render_template("index.html")
 
 
 @app.route("/api/jobs")
@@ -229,7 +233,10 @@ def delete_job():
     df = df[df["job_url"] != job_url]
     after_count = len(df)
     df.to_csv(csv_file, index=False, quoting=csv.QUOTE_NONNUMERIC, escapechar="\\")
-    return jsonify({"success": True, "message": f"Deleted {before_count - after_count} job(s)."})
+    return jsonify(
+        {"success": True, "message": f"Deleted {before_count - after_count} job(s)."}
+    )
+
 
 @app.route("/api/block_company", methods=["POST"])
 def block_company():
@@ -241,6 +248,7 @@ def block_company():
     companies.add(company.strip())
     save_blocked_companies(companies)
     return jsonify({"success": True, "message": f"Blocked company: {company}"})
+
 
 @app.route("/api/blocked_companies", methods=["GET"])
 def get_blocked_companies():
