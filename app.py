@@ -8,6 +8,7 @@ import json
 import psutil
 import base64
 import requests
+import csv
 
 app = Flask(__name__)
 
@@ -85,6 +86,18 @@ def push_settings_to_github():
         data['sha'] = sha
     r = requests.put(url, headers=headers, json=data)
     return r.status_code in (200, 201)
+
+BLOCKED_COMPANIES_FILE = "blocked_companies.json"
+
+def load_blocked_companies():
+    if os.path.exists(BLOCKED_COMPANIES_FILE):
+        with open(BLOCKED_COMPANIES_FILE, "r", encoding="utf-8") as f:
+            return set(json.load(f))
+    return set()
+
+def save_blocked_companies(companies):
+    with open(BLOCKED_COMPANIES_FILE, "w", encoding="utf-8") as f:
+        json.dump(sorted(list(companies)), f, ensure_ascii=False, indent=2)
 
 @app.route('/')
 def index():
@@ -200,6 +213,39 @@ def get_threads():
             print(f"Process error: {e}")
             continue
     return jsonify({"threads": threads})
+
+
+@app.route("/api/delete_job", methods=["POST"])
+def delete_job():
+    data = request.get_json()
+    job_url = data.get("job_url")
+    if not job_url:
+        return jsonify({"success": False, "message": "Missing job_url"}), 400
+    csv_file = get_latest_csv()
+    if not csv_file or not os.path.exists(csv_file):
+        return jsonify({"success": False, "message": "CSV file not found"}), 404
+    df = pd.read_csv(csv_file, comment="#")
+    before_count = len(df)
+    df = df[df["job_url"] != job_url]
+    after_count = len(df)
+    df.to_csv(csv_file, index=False, quoting=csv.QUOTE_NONNUMERIC, escapechar="\\")
+    return jsonify({"success": True, "message": f"Deleted {before_count - after_count} job(s)."})
+
+@app.route("/api/block_company", methods=["POST"])
+def block_company():
+    data = request.get_json()
+    company = data.get("company")
+    if not company:
+        return jsonify({"success": False, "message": "Missing company name"}), 400
+    companies = load_blocked_companies()
+    companies.add(company.strip())
+    save_blocked_companies(companies)
+    return jsonify({"success": True, "message": f"Blocked company: {company}"})
+
+@app.route("/api/blocked_companies", methods=["GET"])
+def get_blocked_companies():
+    companies = sorted(list(load_blocked_companies()))
+    return jsonify({"blocked_companies": companies})
 
 
 if __name__ == "__main__":

@@ -141,13 +141,112 @@
                 gap: 0.5rem;
             }
         }
+        body.dark-mode {
+            background-color: #181a1b;
+            color: #e0e0e0;
+        }
+        .dark-mode .container,
+        .dark-mode .header,
+        .dark-mode .modal-content,
+        .dark-mode .table,
+        .dark-mode .table th,
+        .dark-mode .table td {
+            background-color: #23272b !important;
+            color: #e0e0e0 !important;
+        }
+        .dark-mode .header {
+            background: #23272b;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+        }
+        .dark-mode .header-title {
+            border-bottom: 3px solid #0d6efd;
+            color: #e0e0e0;
+        }
+        .dark-mode .nav-tabs {
+            background: #23272b;
+            border-bottom: 2px solid #343a40;
+        }
+        .dark-mode .nav-tabs .nav-link {
+            color: #b0b0b0;
+        }
+        .dark-mode .nav-tabs .nav-link.active {
+            color: #0d6efd;
+            background: #181a1b;
+            border-bottom: 3px solid #0d6efd;
+        }
+        .dark-mode .table th {
+            background: #23272b !important;
+            color: #b0b0b0 !important;
+        }
+        .dark-mode .table td {
+            background: #181a1b !important;
+            color: #e0e0e0 !important;
+        }
+        .dark-mode .table-hover tbody tr:hover {
+            background: #22262a !important;
+        }
+        .dark-mode .table-striped > tbody > tr:nth-of-type(odd) {
+            background-color: #23272b !important;
+        }
+        .dark-mode .modal-content {
+            background: #23272b;
+            color: #e0e0e0;
+        }
+        .dark-mode .form-control,
+        .dark-mode .form-select {
+            background: #181a1b;
+            color: #e0e0e0;
+            border-color: #343a40;
+        }
+        .dark-mode .form-control:focus {
+            background: #23272b;
+            color: #e0e0e0;
+        }
+        .dark-mode .btn,
+        .dark-mode .btn-group .btn {
+            background: #23272b;
+            color: #e0e0e0;
+            border-color: #343a40;
+        }
+        .dark-mode .btn-primary {
+            background: #0d6efd;
+            border-color: #0d6efd;
+        }
+        .dark-mode .btn-outline-secondary,
+        .dark-mode .btn-outline-danger {
+            background: transparent;
+            color: #e0e0e0;
+            border-color: #343a40;
+        }
+        .dark-mode .alert {
+            background: #23272b;
+            color: #e0e0e0;
+            border-color: #343a40;
+        }
+        .dark-mode .modal-header,
+        .dark-mode .modal-footer {
+            background: #23272b;
+            color: #e0e0e0;
+        }
+        .dark-mode .modal-title {
+            color: #e0e0e0;
+        }
+        .dark-mode .empty-state {
+            color: #b0b0b0;
+        }
+        .dark-mode .spinner-border {
+            border-color: #0d6efd #23272b #23272b #23272b;
+        }
     </style>
     <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600&display=swap" rel="stylesheet">
 </head>
 <body>
     <header class="header d-flex align-items-center justify-content-between">
         <span class="header-title"><i class="bi bi-briefcase-fill me-2 text-primary"></i>Job Scraper Ultimate</span>
-        <button id="settingsBtn" class="btn btn-outline-secondary" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Configure scraper"><i class="bi bi-gear-fill"></i></button>
+        <div class="d-flex align-items-center gap-2">
+            <button id="darkModeToggle" class="btn btn-outline-secondary" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Toggle dark mode"><i class="bi bi-moon-fill"></i></button>
+            <button id="settingsBtn" class="btn btn-outline-secondary" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Configure scraper"><i class="bi bi-gear-fill"></i></button>
+        </div>
     </header>
 <div class="container">
         <div class="mb-1">
@@ -261,7 +360,10 @@
                 <td class="text-right">${scrape_date}</td>
                 <td class="text-right">${scrape_time}</td>
                 <td><a href="${job_url}" target="_blank" class="text-primary"><i class="bi bi-box-arrow-up-right"></i></a></td>
-                <td><button class="btn btn-outline-danger btn-sm delete-job-btn" data-job-url="${encodeURIComponent(job_url)}"><i class="bi bi-trash"></i> Delete</button></td>
+                <td>
+                    <button class="btn btn-outline-danger btn-sm delete-job-btn" data-job-url="${encodeURIComponent(job_url)}"><i class="bi bi-trash"></i> Delete</button>
+                    <button class="btn btn-outline-secondary btn-sm block-company-btn" data-company="${encodeURIComponent(company)}"><i class="bi bi-slash-circle"></i> Block</button>
+                </td>
             </tr>`;
             tbody.append(row);
         });
@@ -421,15 +523,62 @@
             });
         });
         $(function(){ $('[data-bs-toggle="tooltip"]').tooltip(); });
-        // Delete job button handler (placeholder, backend to be implemented)
+        // Delete job button handler
         $(document).on('click', '.delete-job-btn', function() {
             const btn = $(this);
             const jobUrl = decodeURIComponent(btn.data('job-url'));
-            // TODO: Send request to backend to delete job from CSV
-            // For now, just remove from UI
-            btn.closest('tr').fadeOut(300, function() { $(this).remove(); });
+            $.ajax({
+                url: '/api/delete_job',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ job_url: jobUrl }),
+                success: function(response) {
+                    btn.closest('tr').fadeOut(300, function() { $(this).remove(); });
+                    $('#alertBox').removeClass('alert-danger').addClass('alert-success').removeClass('d-none').html('<i class="bi bi-check-circle me-2"></i>' + response.message);
+                },
+                error: function(xhr) {
+                    $('#alertBox').removeClass('alert-success').addClass('alert-danger').removeClass('d-none').html('<i class="bi bi-exclamation-triangle me-2"></i>Failed to delete job.');
+                }
+            });
         });
-});
+        // Block company button handler
+        $(document).on('click', '.block-company-btn', function() {
+            const btn = $(this);
+            const company = decodeURIComponent(btn.data('company'));
+            if (!company) return;
+            $.ajax({
+                url: '/api/block_company',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ company: company }),
+                success: function(response) {
+                    // Remove all jobs from this company in the UI
+                    btn.closest('tbody').find('tr').filter(function() {
+                        return $(this).find('td').eq(2).text() === company;
+                    }).fadeOut(300, function() { $(this).remove(); });
+                    $('#alertBox').removeClass('alert-danger').addClass('alert-success').removeClass('d-none').html('<i class="bi bi-check-circle me-2"></i>' + response.message);
+                },
+                error: function(xhr) {
+                    $('#alertBox').removeClass('alert-success').addClass('alert-danger').removeClass('d-none').html('<i class="bi bi-exclamation-triangle me-2"></i>Failed to block company.');
+                }
+            });
+        });
+        // Dark mode toggle logic
+        function setDarkMode(enabled) {
+            if (enabled) {
+                $("body").addClass("dark-mode");
+                localStorage.setItem("darkMode", "true");
+            } else {
+                $("body").removeClass("dark-mode");
+                localStorage.setItem("darkMode", "false");
+            }
+        }
+        // On load, set dark mode if previously enabled
+        setDarkMode(localStorage.getItem("darkMode") === "true");
+        $("#darkModeToggle").click(function() {
+            setDarkMode(!$("body").hasClass("dark-mode"));
+        });
+    });
 
     let jobsPollInterval = null;
     function startJobsPolling() {
