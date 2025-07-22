@@ -90,9 +90,6 @@ def push_settings_to_github():
 def index():
     return render_template('index.html')
 
-@app.route("/")
-def index():
-    return render_template("index.html")
 
 
 @app.route("/api/jobs")
